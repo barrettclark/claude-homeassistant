@@ -1,51 +1,263 @@
-# Example Home Assistant Automations
-# These are example automations showcasing common patterns
-
-- id: 'example_motion_lights'
-  alias: 'Example: Motion Activated Lights'
-  description: 'Turn on lights when motion is detected'
+- id: '1'
+  alias: Patio door open
+  description: ''
   trigger:
-    - platform: state
-      entity_id: binary_sensor.living_room_motion
-      to: 'on'
+  - type: opened
+    platform: device
+    device_id: 10ae49498cc155c821a2770b4daac2ec
+    entity_id: binary_sensor.door_to_patio_093b7bfe_ias_zone
+    domain: binary_sensor
+  condition: []
+  action:
+  - service: notify.mobile_app_barrett_clarks_iphone_17_pro
+    data:
+      message: Patio door open
+  mode: single
+- id: '1644196625324'
+  alias: Low battery level detection & notification for all battery sensors
+  description: Notify when a device has a low battery
+  use_blueprint:
+    path: gmlupatelli/low_battery_notification.yaml
+    input:
+      actions:
+      - action: notify.mobile_app_barrett_clarks_iphone_17_pro
+        data: {}
+- id: '2'
+  alias: Front Porch Light On at Dusk
+  description: Turn on when ambient light drops below 500 lx for 2 minutes
+  trigger:
+  - trigger: numeric_state
+    entity_id: sensor.coppell_illuminance
+    below: 500
+    for: "00:02:00"
+  condition: []
+  action:
+  - type: turn_on
+    device_id: faaf256dc874426f906e15618615f935
+    entity_id: light.front_porch_light
+    domain: light
+  mode: single
+- id: '5'
+  alias: Front Porch Light Off at Dawn
+  description: Turn off when ambient light rises above 1000 lx for 2 minutes
+  trigger:
+  - trigger: numeric_state
+    entity_id: sensor.coppell_illuminance
+    above: 1000
+    for: "00:02:00"
+  condition: []
+  action:
+  - type: turn_off
+    device_id: faaf256dc874426f906e15618615f935
+    entity_id: light.front_porch_light
+    domain: light
+  mode: single
+- id: '1644360614482'
+  alias: Fireplace Light Auto-On
+  description: Turn on fireplace light when front door opens
+  triggers:
+  - device_id: c77f976f790a48855f3ee334c1318de8
+    domain: lock
+    entity_id: fc1ef887b5b797adb553a209f537bceb
+    type: unlocked
+    trigger: device
+  conditions:
+  - condition: device
+    type: is_off
+    device_id: b8733330320dd4e275567a6960321228
+    entity_id: switch.fireplace
+    domain: switch
+  - condition:
+    - condition: or
+      conditions:
+      - condition: sun
+        after: sunset
+        after_offset: -00:15:00
+      - condition: sun
+        before: sunrise
+        before_offset: 00:15:00
+  actions:
+  - type: turn_on
+    device_id: b8733330320dd4e275567a6960321228
+    entity_id: switch.fireplace
+    domain: switch
+  mode: single
+- id: '1644414344225'
+  alias: Front Porch off at 1am
+  description: Turn the front porch light off at 1AM (if it is on)
+  trigger:
+  - platform: time
+    at: 01:00:00
+  condition: []
+  action:
+  - type: turn_off
+    device_id: faaf256dc874426f906e15618615f935
+    entity_id: light.front_porch_light
+    domain: light
+  mode: single
+- id: '1644868800404'
+  alias: Fireplace Light Off at 9am
+  description: Turn the fireplace light off at 9am
+  trigger:
+  - platform: time
+    at: 09:00:00
+  condition: []
+  action:
+  - type: turn_off
+    device_id: b8733330320dd4e275567a6960321228
+    entity_id: switch.fireplace
+    domain: switch
+  mode: single
+- id: '1668990534061'
+  alias: XMAS - Turn the inside lights on
+  description: XMAS - Turn the stair lights on
+  triggers:
+  - at: 05:30:00
+    trigger: time
+  - at: '16:30:00'
+    trigger: time
+  conditions:
+  - condition: template
+    value_template: >
+      {% set m = now().month %}{% set d = now().day %}
+      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+  actions:
+  - type: turn_on
+    device_id: 95f0ce5cdcb54cd9ceacb302031d8609
+    entity_id: switch.tp_link_2
+    domain: switch
+  - type: turn_on
+    device_id: a4442b017ceba4dc901b889cdaf5fa39
+    entity_id: switch.tp_link_3
+    domain: switch
+  - type: turn_on
+    device_id: 360789b63c777016b6ace69ac0e276e1
+    entity_id: switch.tp_link_4
+    domain: switch
+  - type: turn_on
+    device_id: 2c15dec23d09b3be5ed473b1e0f7bc14
+    entity_id: switch.back_patio_christmas_lights_outdoor_tree
+    domain: switch
+  mode: single
+- id: '1668990720910'
+  alias: XMAS - Turn Lights off At Night
+  description: XMAS - Turn Lights off At Night
+  triggers:
+  - at: 00:00:00
+    trigger: time
+  conditions:
+  - condition: template
+    value_template: >
+      {% set m = now().month %}{% set d = now().day %}
+      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+  actions:
+  - type: turn_off
+    device_id: 95f0ce5cdcb54cd9ceacb302031d8609
+    entity_id: switch.tp_link_2
+    domain: switch
+  - type: turn_off
+    device_id: a4442b017ceba4dc901b889cdaf5fa39
+    entity_id: switch.tp_link_3
+    domain: switch
+  - type: turn_off
+    device_id: 360789b63c777016b6ace69ac0e276e1
+    entity_id: switch.tp_link_4
+    domain: switch
+  - type: turn_off
+    device_id: 192d4821d36cd9674e68732ff0dbd537
+    entity_id: switch.front_yard_christmas_lights_outdoor_lights_1
+    domain: switch
+  - type: turn_off
+    device_id: ff77f510b8748d7ddac12ebc198bd194
+    entity_id: switch.front_yard_christmas_lights_outdoor_lights_2
+    domain: switch
+  - type: turn_off
+    device_id: 2c15dec23d09b3be5ed473b1e0f7bc14
+    entity_id: switch.back_patio_christmas_lights_outdoor_tree
+    domain: switch
+  mode: single
+- id: '1670015129362'
+  alias: XMAS - Turn the inside lights off at 8a on Weekdays
+  description: XMAS - Turn the inside lights off at 8a on Weekdays
+  triggers:
+  - at: 08:00:00
+    trigger: time
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.workday_sensor
+    state: 'on'
+  - condition: template
+    value_template: >
+      {% set m = now().month %}{% set d = now().day %}
+      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+  actions:
+  - type: turn_off
+    device_id: 95f0ce5cdcb54cd9ceacb302031d8609
+    entity_id: switch.tp_link_2
+    domain: switch
+  - type: turn_off
+    device_id: a4442b017ceba4dc901b889cdaf5fa39
+    entity_id: switch.tp_link_3
+    domain: switch
+  - type: turn_off
+    device_id: 360789b63c777016b6ace69ac0e276e1
+    entity_id: switch.tp_link_4
+    domain: switch
+  - type: turn_off
+    device_id: 2c15dec23d09b3be5ed473b1e0f7bc14
+    entity_id: switch.back_patio_christmas_lights_outdoor_tree
+    domain: switch
+  mode: single
+- id: '1674059364769'
+  alias: Turn the stained glass lamp on at 8a on Weekdays
+  description: Turn the stained glass lamp on at 8a on Weekdays
+  trigger:
+  - platform: time
+    at: 05:20:00
   condition:
-    - condition: state
-      entity_id: sun.sun
-      state: 'below_horizon'
+  - condition: state
+    entity_id: binary_sensor.workday_sensor
+    state: 'on'
   action:
-    - service: light.turn_on
-      target:
-        entity_id: light.living_room_main
-      data:
-        brightness_pct: 75
-
-- id: 'example_schedule_lights'
-  alias: 'Example: Evening Light Schedule'
-  description: 'Turn on evening lights at sunset'
+  - type: turn_on
+    device_id: c847b6776ba0bba2495222fec3fd0fe7
+    entity_id: switch.tp_link_1
+    domain: switch
+  mode: single
+- id: '1674059399556'
+  alias: Turn the stained glass lamp off at 10a on Weekdays
+  description: Turn the stained glass lamp off at 10a on Weekdays
   trigger:
-    - platform: sun
-      event: sunset
-      offset: "-00:30:00"
-  action:
-    - service: light.turn_on
-      target:
-        area_id: living_room
-      data:
-        brightness_pct: 50
-
-- id: 'example_device_notification'
-  alias: 'Example: Low Battery Notification'
-  description: 'Notify when device battery is low'
-  trigger:
-    - platform: numeric_state
-      entity_id: sensor.phone_battery_level
-      below: 20
+  - platform: time
+    at: 09:00:00
   condition:
-    - condition: time
-      after: '09:00:00'
-      before: '22:00:00'
+  - condition: state
+    entity_id: binary_sensor.workday_sensor
+    state: 'on'
   action:
-    - service: notify.mobile_app
-      data:
-        title: "Low Battery Alert"
-        message: "Your phone battery is at {{ states('sensor.phone_battery_level') }}%"
+  - type: turn_off
+    device_id: c847b6776ba0bba2495222fec3fd0fe7
+    entity_id: switch.tp_link_1
+    domain: switch
+  mode: single
+- id: '1732716681607'
+  alias: XMAS - Turn outdoor lights on
+  description: XMAS - Outdoor lights
+  triggers:
+  - at: '16:30:00'
+    trigger: time
+  conditions:
+  - condition: template
+    value_template: >
+      {% set m = now().month %}{% set d = now().day %}
+      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+  actions:
+  - type: turn_on
+    device_id: 192d4821d36cd9674e68732ff0dbd537
+    entity_id: switch.front_yard_christmas_lights_outdoor_lights_1
+    domain: switch
+  - type: turn_on
+    device_id: ff77f510b8748d7ddac12ebc198bd194
+    entity_id: switch.front_yard_christmas_lights_outdoor_lights_2
+    domain: switch
+  mode: single

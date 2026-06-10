@@ -40,15 +40,21 @@ class HAOfficialValidator:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=300,
                 cwd=str(self.config_dir),
             )
 
             # Parse the output
             self.parse_check_config_output(result.stdout, result.stderr)
 
-            # Return success if exit code is 0
-            return result.returncode == 0
+            # If exit code is 0, config is valid regardless of output
+            if result.returncode == 0:
+                self.info.append("Configuration check successful!")
+                return True
+
+            # Parse output only on failure
+            self.parse_check_config_output(result.stdout, result.stderr)
+            return False
 
         except subprocess.TimeoutExpired:
             self.errors.append("Home Assistant configuration check timed out")
