@@ -1,0 +1,4 @@
+NotifyOnUpdate.NotifyOnUpdateConfig:
+  UpdateTimeInSec: 60
+  NotifyTitle: 🎉 Updates available 🎉
+  NotifyId: updates_available
