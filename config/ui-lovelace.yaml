@@ -1,0 +1,114 @@
+title: My Dashboard
+views:
+- title: Home
+  badges:
+  - type: entity
+    entity: sensor.unavailable_entities
+    color: red
+  - type: entity
+    entity: person.barrett_clark
+    name: Barrett
+    icon: mdi:human-male
+  - type: entity
+    entity: device_tracker.allison_clarks_iphone_5154
+    name: Allison
+    icon: mdi:human-female
+  cards:
+  - type: weather-forecast
+    entity: weather.coppell
+    show_forecast: true
+    forecast_type: daily
+  - type: entities
+    title: Weather Station
+    entities:
+    - entity: sensor.coppell_temperature
+      icon: mdi:thermometer
+    - entity: sensor.coppell_feels_like
+      icon: mdi:thermometer-lines
+    - entity: sensor.coppell_relative_humidity
+      icon: mdi:water-percent
+    - entity: sensor.coppell_uv_index
+      icon: mdi:sun-wireless
+    - entity: sensor.coppell_wind_speed_avg
+      icon: mdi:weather-windy
+    - entity: sensor.coppell_rain_last_hour
+      icon: mdi:weather-rainy
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+    - type: picture-glance
+      title: Front Door
+      camera_image: camera.front_door_live_view
+      entities:
+      - entity: lock.front_door
+      - entity: binary_sensor.front_door_window_door_is_open
+    - type: picture-glance
+      title: Backyard
+      camera_image: camera.backyard_live_view
+      entities:
+      - entity: siren.backyard_siren
+    - type: picture-glance
+      title: Driveway
+      camera_image: camera.driveway_live_view
+      entities:
+      - entity: sensor.driveway_last_activity
+    - type: picture-glance
+      title: Backyard East Gate
+      camera_image: camera.backyard_east_gate_live_view
+      entities:
+      - entity: siren.backyard_east_gate_siren
+  - type: entities
+    title: Lighting
+    entities:
+    - entity: light.front_porch_light
+      icon: mdi:coach-lamp
+    - entity: switch.fireplace
+      icon: mdi:fireplace
+    - entity: switch.smart_plug_socket_1
+      name: Desk Light
+      icon: mdi:desk-lamp
+    - entity: switch.tp_link_1
+      name: Stained Glass Lamp
+      icon: mdi:floor-lamp
+    - entity: sensor.coppell_illuminance
+      name: Outdoor Light Level
+      icon: mdi:brightness-5
+  - type: entities
+    title: Security
+    entities:
+    - entity: binary_sensor.door_to_garage_eb217bfe_ias_zone
+    - entity: binary_sensor.door_to_patio_093b7bfe_ias_zone
+    - entity: binary_sensor.front_door_access_control_window_door_is_open
+    - entity: lock.front_door
+  - type: conditional
+    conditions:
+    - condition: state
+      entity: binary_sensor.christmas_season
+      state: 'on'
+    card:
+      type: entities
+      title: Christmas Lights
+      entities:
+      - entity: switch.front_yard_christmas_lights_outdoor_lights_1
+        name: Outdoor Lights 1
+      - entity: switch.front_yard_christmas_lights_outdoor_lights_2
+        name: Outdoor Lights 2
+      - entity: switch.back_patio_christmas_lights_outdoor_tree
+        name: Back Patio Tree
+      - entity: switch.tp_link_2
+        name: Stair Light 1
+      - entity: switch.tp_link_3
+        name: Stair Light 2
+      - entity: switch.tp_link_4
+        name: Stair Light 3
+  - type: entities
+    title: System
+    entities:
+    - entity: sensor.unavailable_entities
+    - entity: update.kidde_homesafe_update
+    - entity: binary_sensor.master_battery_state
+    - entity: binary_sensor.owens_room_battery_state
+    - entity: binary_sensor.masons_room_battery_state
+    - entity: binary_sensor.stairs_battery_state
+    - entity: binary_sensor.upstairs_office_battery_state

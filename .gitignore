@@ -83,6 +83,7 @@ config/*.uuid
 *.db-wal
 
 # Home Assistant specific temporary files
+config/.ha_run.lock
 config/deps/
 config/tts/
 config/.shopping_list.json
