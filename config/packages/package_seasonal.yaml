@@ -1,0 +1,8 @@
+template:
+  - binary_sensor:
+      - name: Christmas Season
+        unique_id: christmas_season
+        icon: mdi:christmas-tree
+        state: >
+          {% set m = now().month %}{% set d = now().day %}
+          {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
