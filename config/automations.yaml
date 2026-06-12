@@ -24,12 +24,29 @@
         data: {}
 - id: '2'
   alias: Front Porch Light On at Dusk
-  description: Turn on when ambient light drops below 500 lx for 2 minutes
+  description: Turn on when ambient light drops below 500 lx; restricted to 10am-2am
+    to prevent HA restart re-triggers overnight
   trigger:
   - trigger: numeric_state
     entity_id: sensor.coppell_illuminance
     below: 500
     for: "00:02:00"
+  condition:
+  - condition: time
+    after: "10:00:00"
+    before: "02:00:00"
+  action:
+  - type: turn_on
+    device_id: faaf256dc874426f906e15618615f935
+    entity_id: light.front_porch_light
+    domain: light
+  mode: single
+- id: '1749700000000'
+  alias: Front Porch Light On at Pre-Dawn
+  description: Turn on at 5am so light is on for sunrise
+  trigger:
+  - platform: time
+    at: "05:00:00"
   condition: []
   action:
   - type: turn_on
@@ -39,13 +56,17 @@
   mode: single
 - id: '5'
   alias: Front Porch Light Off at Dawn
-  description: Turn off when ambient light rises above 1000 lx for 2 minutes
+  description: Turn off when ambient light rises above 1000 lx; restricted to 4am-noon
+    to prevent evening cloud-break false triggers
   trigger:
   - trigger: numeric_state
     entity_id: sensor.coppell_illuminance
     above: 1000
     for: "00:02:00"
-  condition: []
+  condition:
+  - condition: time
+    after: "04:00:00"
+    before: "12:00:00"
   action:
   - type: turn_off
     device_id: faaf256dc874426f906e15618615f935
@@ -209,17 +230,49 @@
     domain: switch
   mode: single
 - id: '1674059364769'
-  alias: Turn the stained glass lamp on at 8a on Weekdays
-  description: Turn the stained glass lamp on at 8a on Weekdays
+  alias: Stained Glass Lamp On - Weekdays
+  description: Turn on at 5am on workdays
   trigger:
   - platform: time
-    at: 05:20:00
+    at: "05:00:00"
   condition:
   - condition: state
     entity_id: binary_sensor.workday_sensor
     state: 'on'
   action:
   - type: turn_on
+    device_id: c847b6776ba0bba2495222fec3fd0fe7
+    entity_id: switch.tp_link_1
+    domain: switch
+  mode: single
+- id: '1749700000001'
+  alias: Stained Glass Lamp On - Weekends
+  description: Turn on at 6:30am on weekends
+  trigger:
+  - platform: time
+    at: "06:30:00"
+  condition:
+  - condition: state
+    entity_id: binary_sensor.workday_sensor
+    state: 'off'
+  action:
+  - type: turn_on
+    device_id: c847b6776ba0bba2495222fec3fd0fe7
+    entity_id: switch.tp_link_1
+    domain: switch
+  mode: single
+- id: '1749700000002'
+  alias: Stained Glass Lamp Off - Weekends
+  description: Turn off at 9am on weekends
+  trigger:
+  - platform: time
+    at: "09:00:00"
+  condition:
+  - condition: state
+    entity_id: binary_sensor.workday_sensor
+    state: 'off'
+  action:
+  - type: turn_off
     device_id: c847b6776ba0bba2495222fec3fd0fe7
     entity_id: switch.tp_link_1
     domain: switch
