@@ -25,12 +25,16 @@
 - id: '2'
   alias: Front Porch Light On at Dusk
   description: Turn on when ambient light drops below 500 lx; restricted to 10am-2am
-    to prevent HA restart re-triggers overnight
+    to prevent HA restart re-triggers overnight. Sunset fallback covers Tempest
+    outages.
   trigger:
   - trigger: numeric_state
     entity_id: sensor.coppell_illuminance
     below: 500
     for: "00:02:00"
+  - trigger: sun
+    event: sunset
+    offset: "00:30:00"
   condition:
   - condition: time
     after: "10:00:00"
@@ -57,12 +61,16 @@
 - id: '5'
   alias: Front Porch Light Off at Dawn
   description: Turn off when ambient light rises above 1000 lx; restricted to 4am-noon
-    to prevent evening cloud-break false triggers
+    to prevent evening cloud-break false triggers. Sunrise fallback covers Tempest
+    outages and dark storm mornings.
   trigger:
   - trigger: numeric_state
     entity_id: sensor.coppell_illuminance
     above: 1000
     for: "00:02:00"
+  - trigger: sun
+    event: sunrise
+    offset: "00:45:00"
   condition:
   - condition: time
     after: "04:00:00"
@@ -145,15 +153,15 @@
   actions:
   - type: turn_on
     device_id: 95f0ce5cdcb54cd9ceacb302031d8609
-    entity_id: switch.tp_link_2
+    entity_id: switch.christmas_lights_1
     domain: switch
   - type: turn_on
     device_id: a4442b017ceba4dc901b889cdaf5fa39
-    entity_id: switch.tp_link_3
+    entity_id: switch.christmas_lights_2
     domain: switch
   - type: turn_on
     device_id: 360789b63c777016b6ace69ac0e276e1
-    entity_id: switch.tp_link_4
+    entity_id: switch.christmas_lights_3
     domain: switch
   - type: turn_on
     device_id: 2c15dec23d09b3be5ed473b1e0f7bc14
@@ -174,15 +182,15 @@
   actions:
   - type: turn_off
     device_id: 95f0ce5cdcb54cd9ceacb302031d8609
-    entity_id: switch.tp_link_2
+    entity_id: switch.christmas_lights_1
     domain: switch
   - type: turn_off
     device_id: a4442b017ceba4dc901b889cdaf5fa39
-    entity_id: switch.tp_link_3
+    entity_id: switch.christmas_lights_2
     domain: switch
   - type: turn_off
     device_id: 360789b63c777016b6ace69ac0e276e1
-    entity_id: switch.tp_link_4
+    entity_id: switch.christmas_lights_3
     domain: switch
   - type: turn_off
     device_id: 192d4821d36cd9674e68732ff0dbd537
@@ -214,15 +222,15 @@
   actions:
   - type: turn_off
     device_id: 95f0ce5cdcb54cd9ceacb302031d8609
-    entity_id: switch.tp_link_2
+    entity_id: switch.christmas_lights_1
     domain: switch
   - type: turn_off
     device_id: a4442b017ceba4dc901b889cdaf5fa39
-    entity_id: switch.tp_link_3
+    entity_id: switch.christmas_lights_2
     domain: switch
   - type: turn_off
     device_id: 360789b63c777016b6ace69ac0e276e1
-    entity_id: switch.tp_link_4
+    entity_id: switch.christmas_lights_3
     domain: switch
   - type: turn_off
     device_id: 2c15dec23d09b3be5ed473b1e0f7bc14

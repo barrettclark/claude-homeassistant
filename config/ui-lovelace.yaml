@@ -42,7 +42,6 @@ views:
       camera_image: camera.front_door_live_view
       entities:
       - entity: lock.front_door
-      - entity: binary_sensor.front_door_window_door_is_open
     - type: picture-glance
       title: Backyard
       camera_image: camera.backyard_live_view
@@ -78,8 +77,9 @@ views:
     title: Security
     entities:
     - entity: binary_sensor.door_to_garage_eb217bfe_ias_zone
+      icon: mdi:garage-variant
     - entity: binary_sensor.door_to_patio_093b7bfe_ias_zone
-    - entity: binary_sensor.front_door_access_control_window_door_is_open
+      icon: mdi:door-sliding
     - entity: lock.front_door
   - type: conditional
     conditions:
@@ -96,12 +96,12 @@ views:
         name: Outdoor Lights 2
       - entity: switch.back_patio_christmas_lights_outdoor_tree
         name: Back Patio Tree
-      - entity: switch.tp_link_2
-        name: Stair Light 1
-      - entity: switch.tp_link_3
-        name: Stair Light 2
-      - entity: switch.tp_link_4
-        name: Stair Light 3
+      - entity: switch.christmas_lights_1
+        name: Christmas Tree
+      - entity: switch.christmas_lights_2
+        name: Stairs Garland 1
+      - entity: switch.christmas_lights_3
+        name: Stairs Garland 2
   - type: entities
     title: System
     entities:

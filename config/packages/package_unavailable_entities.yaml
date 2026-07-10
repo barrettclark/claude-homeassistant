@@ -38,6 +38,85 @@ group:
       - sensor.unavailable_entities # prevent template loop warnings?
       - binary_sensor.updater # always unknown after restart
 
+      # Christmas light plugs - unplugged outside the holiday season
+      - switch.back_patio_christmas_lights
+      - switch.back_patio_christmas_lights_led
+      - switch.back_patio_christmas_lights_outdoor_tree
+      - switch.back_patio_christmas_lights_plug_2
+      - binary_sensor.back_patio_christmas_lights_cloud_connection
+      - switch.front_yard_christmas_lights
+      - switch.front_yard_christmas_lights_led
+      - switch.front_yard_christmas_lights_outdoor_lights_1
+      - switch.front_yard_christmas_lights_outdoor_lights_2
+      - binary_sensor.front_yard_christmas_lights_cloud_connection
+
+      # Seasonal TP-Link plugs - unplugged outside the holiday season
+      - switch.christmas_lights_1
+      - switch.christmas_lights_1_led
+      - binary_sensor.christmas_lights_1_cloud_connection
+      - sensor.christmas_lights_1_current
+      - sensor.christmas_lights_1_current_consumption
+      - sensor.christmas_lights_1_this_month_s_consumption
+      - sensor.christmas_lights_1_today_s_consumption
+      - sensor.christmas_lights_1_total_consumption
+      - sensor.christmas_lights_1_voltage
+      - switch.christmas_lights_2
+      - switch.christmas_lights_2_led
+      - binary_sensor.christmas_lights_2_cloud_connection
+      - switch.christmas_lights_3
+      - switch.christmas_lights_3_led
+      - binary_sensor.christmas_lights_3_cloud_connection
+
+      # Companion app sensors - disabled in app or gated by iOS permissions
+      # (both phones are online and tracking fine)
+      - notify.allison_clarks_iphone_5154
+      - sensor.allison_clarks_iphone_5154_audio_output
+      - sensor.allison_clarks_iphone_5154_bssid
+      - sensor.allison_clarks_iphone_5154_connection_type
+      - sensor.allison_clarks_iphone_5154_geocoded_location
+      - sensor.allison_clarks_iphone_5154_last_update_trigger
+      - sensor.allison_clarks_iphone_5154_sim_1
+      - sensor.allison_clarks_iphone_5154_sim_2
+      - sensor.allison_clarks_iphone_5154_ssid
+      - sensor.allison_clarks_iphone_5154_storage
+      - notify.barrett_clarks_iphone_17_pro
+      - binary_sensor.barrett_clarks_iphone_17_pro_focus
+      - sensor.barrett_clarks_iphone_17_pro_activity
+      - sensor.barrett_clarks_iphone_17_pro_audio_output
+      - sensor.barrett_clarks_iphone_17_pro_average_active_pace
+      - sensor.barrett_clarks_iphone_17_pro_bssid
+      - sensor.barrett_clarks_iphone_17_pro_connection_type
+      - sensor.barrett_clarks_iphone_17_pro_distance
+      - sensor.barrett_clarks_iphone_17_pro_floors_ascended
+      - sensor.barrett_clarks_iphone_17_pro_floors_descended
+      - sensor.barrett_clarks_iphone_17_pro_geocoded_location
+      - sensor.barrett_clarks_iphone_17_pro_last_update_trigger
+      - sensor.barrett_clarks_iphone_17_pro_sim_1
+      - sensor.barrett_clarks_iphone_17_pro_sim_2
+      - sensor.barrett_clarks_iphone_17_pro_ssid
+      - sensor.barrett_clarks_iphone_17_pro_steps
+      - sensor.barrett_clarks_iphone_17_pro_storage
+
+      # Integration quirks - entities the device never reports a value for
+      - conversation.home_assistant # always unknown
+      - update.door_to_garage_firmware # Linkind publishes no OTA images to ZHA
+      - update.door_to_patio_firmware # Linkind publishes no OTA images to ZHA
+      - number.front_volume # Ring
+      - sensor.front_door_battery # Ring wired doorbell has no battery
+      - select.front_door_auto_lock_time # Schlage
+      - switch.daily_schedule # Rachio
+      - sensor.coppell_precipitation_type_yesterday # WeatherFlow
+
+      # Stale leftover entities - devices are healthy, these are legacy
+      # duplicates; can be deleted in the UI (Settings -> Entities)
+      - binary_sensor.zcombo_g_smoke_co_alarm_idle
+      - binary_sensor.zcombo_g_smoke_co_alarm_idle_2
+      - binary_sensor.zcombo_g_smoke_co_alarm_low_battery_level
+      - sensor.quickstick_combo_basic
+      - sensor.quickstick_combo_node_status
+      - button.front_porch_light_ota_update
+      - button.front_porch_light_reboot
+
 # OPTIONAL - filter template loop warnings from the Home Assistant log.
 logger:
   filters:
