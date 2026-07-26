@@ -79,6 +79,8 @@ group:
       - sensor.allison_clarks_iphone_5154_sim_2
       - sensor.allison_clarks_iphone_5154_ssid
       - sensor.allison_clarks_iphone_5154_storage
+      - sensor.allison_clarks_iphone_5154_kiosk_brightness # Kiosk Mode not enabled
+      - sensor.allison_clarks_iphone_5154_kiosk_volume # Kiosk Mode not enabled
       - notify.barrett_clarks_iphone_17_pro
       - binary_sensor.barrett_clarks_iphone_17_pro_focus
       - sensor.barrett_clarks_iphone_17_pro_activity
@@ -96,6 +98,8 @@ group:
       - sensor.barrett_clarks_iphone_17_pro_ssid
       - sensor.barrett_clarks_iphone_17_pro_steps
       - sensor.barrett_clarks_iphone_17_pro_storage
+      - sensor.barrett_clarks_iphone_17_pro_kiosk_brightness # Kiosk Mode not enabled
+      - sensor.barrett_clarks_iphone_17_pro_kiosk_volume # Kiosk Mode not enabled
 
       # Integration quirks - entities the device never reports a value for
       - conversation.home_assistant # always unknown

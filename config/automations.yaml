@@ -19,6 +19,7 @@
   use_blueprint:
     path: gmlupatelli/low_battery_notification.yaml
     input:
+      threshold: 15
       actions:
       - action: notify.mobile_app_barrett_clarks_iphone_17_pro
         data: {}
@@ -85,9 +86,9 @@
   alias: Fireplace Light Auto-On
   description: Turn on fireplace light when front door opens
   triggers:
-  - device_id: c77f976f790a48855f3ee334c1318de8
+  - device_id: 4432145fdb0fdc2eeb7df76194ede37a
     domain: lock
-    entity_id: fc1ef887b5b797adb553a209f537bceb
+    entity_id: 55b585ee2d588a883b70e7fdc60b9900
     type: unlocked
     trigger: device
   conditions:
