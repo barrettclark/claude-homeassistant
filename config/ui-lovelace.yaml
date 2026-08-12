@@ -109,6 +109,6 @@ views:
     - entity: update.kidde_homesafe_update
     - entity: binary_sensor.master_battery_state
     - entity: binary_sensor.owens_room_battery_state
-    - entity: binary_sensor.masons_room_battery_state
+    - entity: binary_sensor.masons_room_battery_state_2
     - entity: binary_sensor.stairs_battery_state
     - entity: binary_sensor.upstairs_office_battery_state
