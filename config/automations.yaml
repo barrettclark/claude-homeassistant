@@ -150,7 +150,7 @@
   - condition: template
     value_template: >
       {% set m = now().month %}{% set d = now().day %}
-      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+      {{ (m == 10 and d >= 31) or m == 11 or m == 12 or (m == 1 and d <= 7) }}
   actions:
   - type: turn_on
     device_id: 95f0ce5cdcb54cd9ceacb302031d8609
@@ -179,7 +179,7 @@
   - condition: template
     value_template: >
       {% set m = now().month %}{% set d = now().day %}
-      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+      {{ (m == 10 and d >= 31) or m == 11 or m == 12 or (m == 1 and d <= 7) }}
   actions:
   - type: turn_off
     device_id: 95f0ce5cdcb54cd9ceacb302031d8609
@@ -219,7 +219,7 @@
   - condition: template
     value_template: >
       {% set m = now().month %}{% set d = now().day %}
-      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+      {{ (m == 10 and d >= 31) or m == 11 or m == 12 or (m == 1 and d <= 7) }}
   actions:
   - type: turn_off
     device_id: 95f0ce5cdcb54cd9ceacb302031d8609
@@ -312,7 +312,7 @@
   - condition: template
     value_template: >
       {% set m = now().month %}{% set d = now().day %}
-      {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+      {{ (m == 10 and d >= 31) or m == 11 or m == 12 or (m == 1 and d <= 7) }}
   actions:
   - type: turn_on
     device_id: 192d4821d36cd9674e68732ff0dbd537

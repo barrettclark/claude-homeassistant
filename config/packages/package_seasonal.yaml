@@ -5,4 +5,4 @@ template:
         icon: mdi:christmas-tree
         state: >
           {% set m = now().month %}{% set d = now().day %}
-          {{ (m == 11 and d >= 25) or m == 12 or (m == 1 and d <= 7) }}
+          {{ (m == 10 and d >= 31) or m == 11 or m == 12 or (m == 1 and d <= 7) }}
