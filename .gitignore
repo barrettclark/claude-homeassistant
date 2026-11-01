@@ -145,3 +145,4 @@ coverage.xml
 
 # Virtual Environment symlink (points to ../venv)
 # Note: Both venv/ and venv symlink are ignored above
+esphome/secrets.yaml
