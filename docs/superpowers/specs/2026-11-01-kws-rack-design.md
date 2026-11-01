@@ -11,7 +11,9 @@ kitchen dashboard project (`hardware/rack-display/`), and the build guide
 sits alongside it at `hardware/kws-rack/ASSEMBLY.md`.
 
 Location: office desk, right-hand end, away from the X1 Carbon's exhaust.
-Open sides, room-temperature air.
+Open frame: no side or top plates (a deliberate choice, see Thermal).
+In the KWS planner the plates still appear in the config; they're
+optional parts and simply aren't printed or cut.
 
 ## What goes in, what doesn't
 
@@ -106,7 +108,9 @@ glass ~5.75 mm proud of the PCB; glass offset −0.2 x / −0.5 y.
   list.
 - **Rack depth vs. NAS:** DS423+ is 223 mm deep plus rear cables. Check the
   KWS planner's stock depth; a 320 mm-deep connector remix exists if needed.
-- **EQ14 mount:** no EQ14-specific 10" mount found; generate one (126 ×
-  126 × 39) with the MiniRack Generator.
+- **EQ14 shelf** (`hardware/kws-rack/eq14_shelf.scad`): 1U faceplate
+  with an I/O window plus a cantilevered tray (side rails, rear stop,
+  floor vents, gussets). Uses Beelink's published 126 × 126 × 39 mm
+  without feet; check the slip fit (0.8 mm/side) on the first print.
 - **Rack display firmware:** new ESPHome config (rack-specific pages: NAS,
   Tempest, network) not started.

@@ -13,10 +13,10 @@ display faceplate source lives in `hardware/rack-display/`.
 | 6U base rack | [KWS Rack v2](https://makerworld.com/en/models/2139130), "6U Base Rack" profile | ~40 h, 10 plates. Print with walls > infill (Bambu "Strength") |
 | 3U frame extension | same model, "3U Frame extension kit" | ~14 h |
 | Synology 4-bay module (4U) | [MakerWorld 2254100](https://makerworld.com/models/2254100) | Skip its base if you already printed the KWS base |
-| EQ14 1U shelf | [MiniRack Generator](https://makerworld.com/en/models/1765102-10-inch-mini-rack-generator) | Enter 126 × 126 × 39 mm |
+| EQ14 1U shelf | `hardware/kws-rack/eq14_shelf.scad` | Face-down on the bed; tray prints vertically, no supports |
 | Vented 1U blank | KWS page links a blank-panel generator | U6 |
 | Display faceplate (2U) | `hardware/rack-display/rack_faceplate.scad` | Face-down on the bed |
-| Optional side plates | KWS model (printed) or included DXFs (3 mm acrylic) | Panels on → add a fan |
+| Side/top plates | **Not used**: the rack stays open | Skip them; if added later, add a fan |
 
 ### Frame hardware (9U, from the KWS hardware table)
 
