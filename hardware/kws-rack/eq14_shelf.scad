@@ -2,8 +2,8 @@
 //
 // A 1U faceplate with a window onto the EQ14's front I/O (power button,
 // USB-A, USB-C, audio), and a cantilevered tray behind it: side rails to
-// locate the box, a rear stop, floor vents, and gussets tying the tray to
-// the faceplate. The EQ14 slides in from the back until its face meets
+// locate the box, floor vents, and gussets tying the tray to the
+// faceplate. The rear stop is optional and off, so the rear ports stay clear. The EQ14 slides in from the back until its face meets
 // the plate. Remove its rubber feet first.
 //
 // Print face-down (faceplate on the bed); the tray rises vertically and
@@ -14,7 +14,7 @@
 $fn = 48;
 
 // --- rack standard (EIA-310 10-inch), matches rack_faceplate.scad ---
-rack_u          = 44.45;
+rack_u          = 44.333;         // KWS legs: measured pitch per the 9U build sheet (EIA nominal 44.45)
 panel_h         = rack_u - 0.8;   // 43.65
 panel_w         = 254;
 rail_opening    = 222.25;
@@ -36,7 +36,11 @@ dev_clear       = 0.8;            // per side, slip fit
 floor_t         = 2.4;
 rail_h          = 10;             // side rails locate the box
 rail_t          = 2.4;
-stop_h          = 12;             // rear stop
+// Rear stop: off. A full-width lip covers the bottom of the rear ports
+// (found on the first print). The faceplate stops the box going forward,
+// and the rails hold it side to side.
+rear_stop       = false;
+stop_h          = 12;
 stop_t          = 2.4;
 gusset_l        = 40;             // along the tray
 gusset_h        = 30;             // up the faceplate
@@ -90,12 +94,12 @@ module tray() {
         union() {
             // floor
             translate([-outer_w / 2, floor_y, z0])
-                cube([outer_w, floor_t, bay_d + stop_t]);
+                cube([outer_w, floor_t, bay_d + (rear_stop ? stop_t : 0)]);
             // side rails
             for (s = [-1, 1])
                 translate([s * (bay_w / 2 + rail_t / 2) - rail_t / 2, floor_y, z0])
-                    cube([rail_t, floor_t + rail_h, bay_d + stop_t]);
-            // rear stop
+                    cube([rail_t, floor_t + rail_h, bay_d + (rear_stop ? stop_t : 0)]);
+            if (rear_stop)
             translate([-outer_w / 2, floor_y, z0 + bay_d])
                 cube([outer_w, floor_t + stop_h, stop_t]);
             // gussets: triangles in the y-z plane, outboard of the rails

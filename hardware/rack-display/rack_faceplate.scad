@@ -18,12 +18,16 @@
 // below. params.scad's board_hole_inset / standoff_pilot_d are still the
 // old estimates; once those are corrected there, these can fold back in.
 
-include <../kitchen-dashboard/case/params.scad>   // pir_bore_d
+// PIR bore: same value as the kitchen case's params.scad, kept local so the
+// file renders on its own. (The first printed plate came out with ~2 mm
+// pinholes here: with that include unresolved, OpenSCAD fell back to its
+// default cylinder size.)
+pir_bore_d      = 24;             // HC-SR501 dome ~23 mm + clearance
 
 $fn = 64;
 
 // --- rack standard (EIA-310 10-inch) ---
-rack_u          = 44.45;
+rack_u          = 44.333;         // KWS legs: measured pitch per the 9U build sheet (EIA nominal 44.45)
 panel_u         = 2;
 panel_w         = 254;            // 10" full face incl. ears
 panel_h         = panel_u * rack_u - 0.8;  // 88.1, standard panel clearance
@@ -188,6 +192,7 @@ module faceplate() {
 mirror([1, 0, 0]) faceplate();
 
 // Sanity checks: fail loudly instead of printing a plate that doesn't fit.
+assert(pir_bore_d >= 20, "PIR bore missing or too small for the HC-SR501 dome");
 assert(rk_board_w <= panel_h - 2 * rib_t, "board taller than the 2U plate");
 assert(rk_hole_pitch_x / 2 - front_standoff_od / 2 > glass_l / 2 + abs(screen_offset_x),
        "standoffs collide with the glass edge");
