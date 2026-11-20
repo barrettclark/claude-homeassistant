@@ -1,0 +1,657 @@
+# Rack display firmware. See hardware/rack-display/ASSEMBLY.md for the
+# build and wiring this implements. Hardware blocks (esp32/psram, the
+# logger UART0 override, i2c, display, touch, backlight, PIR) are carried
+# over unchanged from esphome/kitchen-dashboard.yaml — same board family.
+
+esphome:
+  name: rack-display
+  friendly_name: Home Office Rack
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  encryption:
+    key: !secret rack_display_api_key
+
+ota:
+  - platform: esphome
+    encryption:
+
+# hardware_uart forced to UART0: this board's USB-C port runs through a
+# discrete UART bridge chip, not the ESP32-S3's native USB peripheral —
+# but that native peripheral is hard-wired to GPIO19/20 in silicon
+# regardless, which would otherwise conflict with the I2C touch bus below.
+logger:
+  hardware_uart: UART0
+
+# ESPHome will warn that GPIO19/20 are "used by the USB-Serial-JTAG
+# interface" — that warning is generic to the ESP32-S3 chip and doesn't
+# apply here now that the logger above is forced off that peripheral;
+# these pins are free for I2C on this board. Expected, safe to ignore.
+i2c:
+  sda: GPIO19
+  scl: GPIO20
+  frequency: 400kHz
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+# Board is a DIYmalls/Sunton ESP32-8048S043C. The "ESP32-8048S050" model
+# below is the closest built-in ESPHome model — its pin mapping matches
+# this exact board (verified against the physical board's photos), even
+# though the model name refers to the 5.0" sibling panel.
+display:
+  - platform: mipi_rgb
+    id: rack_display
+    model: ESP32-8048S050
+
+touchscreen:
+  platform: gt911
+  id: rack_touch
+  display: rack_display
+  on_touch:
+    - script.execute: wake_display
+
+output:
+  - platform: ledc
+    pin: GPIO2
+    id: backlight_pwm
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    id: backlight
+    name: "Rack Display Backlight"
+    restore_mode: ALWAYS_ON
+    internal: true
+
+# PIR wake source (board connector P4, pin IO17 — see ASSEMBLY.md for
+# wiring). The MCU and WiFi stay running continuously; only the backlight
+# is gated on idle.
+binary_sensor:
+  - platform: gpio
+    id: pir_motion
+    name: "Motion"
+    device_class: motion
+    pin:
+      number: GPIO17
+      mode: INPUT
+    on_press:
+      - script.execute: wake_display
+
+script:
+  - id: wake_display
+    mode: restart
+    then:
+      - light.turn_on: backlight
+      - script.execute: idle_timer
+
+  - id: idle_timer
+    mode: restart
+    then:
+      - delay: 45s
+      - light.turn_off: backlight
+
+# Rack-air temperature probe (DS18B20 via PlugableTerminal adapter,
+# board connector P4 pin IO18 — see ASSEMBLY.md for wiring).
+one_wire:
+  - platform: gpio
+    pin: GPIO18
+
+sensor:
+  - platform: dallas_temp
+    id: rack_temp
+    name: "Temperature"
+    unit_of_measurement: "°F"
+    update_interval: 60s
+    filters:
+      - lambda: return x * 1.8 + 32.0;
+    # LVGL's text:/format:/args: only evaluates once, at widget creation —
+    # it doesn't auto-refresh when the referenced sensor updates, so the
+    # label has to be told to re-render on every new reading. Same pattern
+    # repeats below for every HA-sourced sensor on the data pages.
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: temp_label
+            text:
+              format: "%.1f°F"
+              args:
+                - id(rack_temp).state
+
+  # Outside conditions (Tempest, via weather.coppell) — HA's unit system
+  # here is already imperial, same as the Synology disk temps below, so
+  # no conversion needed.
+  - platform: homeassistant
+    id: outside_temp
+    entity_id: weather.coppell
+    attribute: temperature
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: outside_temp_label
+            text:
+              format: "%.1f°F"
+              args:
+                - id(outside_temp).state
+
+  - platform: homeassistant
+    id: outside_humidity
+    entity_id: weather.coppell
+    attribute: humidity
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: outside_humidity_label
+            text: !lambda return str_sprintf("%.0f%%", id(outside_humidity).state);
+
+  - platform: homeassistant
+    id: outside_wind
+    entity_id: weather.coppell
+    attribute: wind_speed
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: outside_wind_label
+            text:
+              format: "%.0f mph"
+              args:
+                - id(outside_wind).state
+
+  - platform: homeassistant
+    id: outside_pressure
+    entity_id: weather.coppell
+    attribute: pressure
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: outside_pressure_label
+            text:
+              format: "%.2f inHg"
+              args:
+                - id(outside_pressure).state
+
+  # Synology NAS ("boulevardier")
+  - platform: homeassistant
+    id: nas_vol1_used
+    entity_id: sensor.boulevardier_volume_1_volume_used
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_vol1_used_label
+            text: !lambda return str_sprintf("%.0f%%", id(nas_vol1_used).state);
+
+  - platform: homeassistant
+    id: nas_vol2_used
+    entity_id: sensor.boulevardier_volume_2_volume_used
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_vol2_used_label
+            text: !lambda return str_sprintf("%.0f%%", id(nas_vol2_used).state);
+
+  - platform: homeassistant
+    id: nas_vol1_temp
+    entity_id: sensor.boulevardier_volume_1_average_disk_temp
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_vol1_temp_label
+            text:
+              format: "%.0f°F"
+              args:
+                - id(nas_vol1_temp).state
+
+  - platform: homeassistant
+    id: nas_vol2_temp
+    entity_id: sensor.boulevardier_volume_2_average_disk_temp
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_vol2_temp_label
+            text:
+              format: "%.0f°F"
+              args:
+                - id(nas_vol2_temp).state
+
+  - platform: homeassistant
+    id: nas_cpu
+    entity_id: sensor.boulevardier_cpu_utilization_total
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_cpu_label
+            text: !lambda return str_sprintf("%.0f%%", id(nas_cpu).state);
+
+  - platform: homeassistant
+    id: nas_mem
+    entity_id: sensor.boulevardier_memory_usage_real
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_mem_label
+            text: !lambda return str_sprintf("%.0f%%", id(nas_mem).state);
+
+  # ASUS router. Entity IDs are derived from the AsusWRT integration's
+  # configured host, currently a placeholder IP (192.0.2.1) — if that's
+  # ever corrected to the router's real LAN address these entity IDs
+  # will change and need updating here too.
+  - platform: homeassistant
+    id: net_devices
+    entity_id: sensor.192_0_2_1_devices_connected
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: net_devices_label
+            text:
+              format: "%.0f"
+              args:
+                - id(net_devices).state
+
+  # Download/upload speed via UPnP (not AsusWRT) — AsusWRT's own speed
+  # sensors stayed disabled even after enabling + reloading in the HA UI;
+  # these UPnP-sourced equivalents were already enabled and live.
+  - platform: homeassistant
+    id: net_download
+    entity_id: sensor.rt_ac3100_4508_kib_s_received
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: net_download_label
+            text:
+              format: "%.0f KiB/s"
+              args:
+                - id(net_download).state
+
+  - platform: homeassistant
+    id: net_upload
+    entity_id: sensor.rt_ac3100_4508_kib_s_sent
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: net_upload_label
+            text:
+              format: "%.0f KiB/s"
+              args:
+                - id(net_upload).state
+
+text_sensor:
+  - platform: homeassistant
+    id: outside_condition
+    entity_id: weather.coppell
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: outside_condition_label
+            text: !lambda return id(outside_condition).state;
+
+interval:
+  - interval: 30s
+    then:
+      - lvgl.label.update:
+          id: time_label
+          text: !lambda return id(ha_time).now().strftime("%I:%M %p");
+
+# Single dashboard page — everything fits on one screen, so no paging
+# or swipe/nav-button navigation is needed.
+lvgl:
+  displays:
+    - rack_display
+  touchscreens:
+    - rack_touch
+  style_definitions:
+    - id: card_style
+      bg_color: 0x1E2029
+      bg_opa: COVER
+      radius: 10
+      border_width: 2
+      pad_all: 4
+      width: 118
+      height: 68
+    - id: card_value_style
+      text_color: 0xE8ECF4
+      text_font: montserrat_18
+    - id: page_title_style
+      text_color: 0x4FC3F7
+      text_font: montserrat_18
+    - id: page_subtitle_style
+      text_color: 0xB8C0D0
+      text_font: montserrat_12
+    - id: card_grid_style
+      pad_row: 8
+      pad_column: 8
+    # Per-source color coding: border + title color share the source's
+    # accent so a card reads as "whose data is this" at a glance.
+    - id: card_border_rack
+      border_color: 0x4FC3F7
+    - id: card_border_weather
+      border_color: 0xFFB74D
+    - id: card_border_nas
+      border_color: 0x81C784
+    - id: card_border_network
+      border_color: 0xBA68C8
+    - id: card_title_rack
+      text_color: 0x4FC3F7
+      text_font: montserrat_10
+    - id: card_title_weather
+      text_color: 0xFFB74D
+      text_font: montserrat_10
+    - id: card_title_nas
+      text_color: 0x81C784
+      text_font: montserrat_10
+    - id: card_title_network
+      text_color: 0xBA68C8
+      text_font: montserrat_10
+  pages:
+    - id: page_home
+      widgets:
+        - obj:
+            width: 100%
+            height: 100%
+            bg_color: 0x12141A
+            bg_opa: COVER
+            border_width: 0
+            pad_all: 16
+            layout:
+              type: flex
+              flex_flow: COLUMN
+              flex_align_main: START
+              flex_align_cross: CENTER
+            widgets:
+              - obj:
+                  width: 100%
+                  height: SIZE_CONTENT
+                  bg_opa: TRANSP
+                  border_width: 0
+                  layout:
+                    type: flex
+                    flex_flow: ROW
+                    flex_align_main: SPACE_BETWEEN
+                    flex_align_cross: CENTER
+                  widgets:
+                    - label:
+                        styles: page_title_style
+                        text: "Home Office Rack"
+                    - obj:
+                        width: SIZE_CONTENT
+                        height: SIZE_CONTENT
+                        bg_opa: TRANSP
+                        border_width: 0
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: END
+                        widgets:
+                          - label:
+                              id: time_label
+                              styles: page_title_style
+                              text: "--:--"
+                          - label:
+                              id: outside_condition_label
+                              styles: page_subtitle_style
+                              text: "--"
+              - obj:
+                  width: 100%
+                  height: SIZE_CONTENT
+                  bg_opa: TRANSP
+                  border_width: 0
+                  pad_top: 12
+                  styles: card_grid_style
+                  layout:
+                    type: flex
+                    flex_flow: ROW_WRAP
+                    flex_align_main: CENTER
+                    flex_align_cross: CENTER
+                  widgets:
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_rack
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_rack
+                              text: "Rack Air"
+                          - label:
+                              id: temp_label
+                              styles: card_value_style
+                              text: "--°F"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_weather
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_weather
+                              text: "Temperature"
+                          - label:
+                              id: outside_temp_label
+                              styles: card_value_style
+                              text: "--°F"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_weather
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_weather
+                              text: "Humidity"
+                          - label:
+                              id: outside_humidity_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_weather
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_weather
+                              text: "Wind"
+                          - label:
+                              id: outside_wind_label
+                              styles: card_value_style
+                              text: "--"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_weather
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_weather
+                              text: "Pressure"
+                          - label:
+                              id: outside_pressure_label
+                              styles: card_value_style
+                              text: "--"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_nas
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_nas
+                              text: "Vol 1 Used"
+                          - label:
+                              id: nas_vol1_used_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_nas
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_nas
+                              text: "Vol 2 Used"
+                          - label:
+                              id: nas_vol2_used_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_nas
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_nas
+                              text: "Vol 1 Disks"
+                          - label:
+                              id: nas_vol1_temp_label
+                              styles: card_value_style
+                              text: "--°F"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_nas
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_nas
+                              text: "Vol 2 Disks"
+                          - label:
+                              id: nas_vol2_temp_label
+                              styles: card_value_style
+                              text: "--°F"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_nas
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_nas
+                              text: "CPU"
+                          - label:
+                              id: nas_cpu_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_nas
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_nas
+                              text: "Memory"
+                          - label:
+                              id: nas_mem_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_network
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_network
+                              text: "Devices"
+                          - label:
+                              id: net_devices_label
+                              styles: card_value_style
+                              text: "--"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_network
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_network
+                              text: "Download"
+                          - label:
+                              id: net_download_label
+                              styles: card_value_style
+                              text: "--"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_network
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_network
+                              text: "Upload"
+                          - label:
+                              id: net_upload_label
+                              styles: card_value_style
+                              text: "--"
