@@ -288,6 +288,48 @@ sensor:
               args:
                 - id(net_upload).state
 
+  # Manhattan (Beelink), via Glances. Entity IDs are IP-derived, same
+  # fragility as the AsusWRT/UPnP ones above — tied to its current
+  # 192.0.2.200 DHCP reservation.
+  - platform: homeassistant
+    id: manhattan_cpu
+    entity_id: sensor.office_192_0_2_200_cpu_usage
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: manhattan_cpu_label
+            text: !lambda return str_sprintf("%.0f%%", id(manhattan_cpu).state);
+
+  - platform: homeassistant
+    id: manhattan_mem
+    entity_id: sensor.office_192_0_2_200_memory_usage
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: manhattan_mem_label
+            text: !lambda return str_sprintf("%.0f%%", id(manhattan_mem).state);
+
+  - platform: homeassistant
+    id: manhattan_swap
+    entity_id: sensor.office_192_0_2_200_swap_usage
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: manhattan_swap_label
+            text: !lambda return str_sprintf("%.0f%%", id(manhattan_swap).state);
+
+  - platform: homeassistant
+    id: manhattan_temp
+    entity_id: sensor.office_192_0_2_200_composite_temperature
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: manhattan_temp_label
+            text:
+              format: "%.0f°F"
+              args:
+                - id(manhattan_temp).state
+
 text_sensor:
   - platform: homeassistant
     id: outside_condition
@@ -343,6 +385,8 @@ lvgl:
       border_color: 0x81C784
     - id: card_border_network
       border_color: 0xBA68C8
+    - id: card_border_manhattan
+      border_color: 0x4DD0E1
     - id: card_title_rack
       text_color: 0x4FC3F7
       text_font: montserrat_10
@@ -355,6 +399,9 @@ lvgl:
     - id: card_title_network
       text_color: 0xBA68C8
       text_font: montserrat_10
+    - id: card_title_manhattan
+      text_color: 0x4DD0E1
+      text_font: montserrat_10
   pages:
     - id: page_home
       widgets:
@@ -364,7 +411,11 @@ lvgl:
             bg_color: 0x12141A
             bg_opa: COVER
             border_width: 0
-            pad_all: 16
+            pad_top: 0
+            pad_bottom: 16
+            pad_left: 16
+            pad_right: 16
+            scrollable: false
             layout:
               type: flex
               flex_flow: COLUMN
@@ -409,7 +460,8 @@ lvgl:
                   height: SIZE_CONTENT
                   bg_opa: TRANSP
                   border_width: 0
-                  pad_top: 12
+                  pad_top: 4
+                  scrollable: false
                   styles: card_grid_style
                   layout:
                     type: flex
@@ -655,3 +707,71 @@ lvgl:
                               id: net_upload_label
                               styles: card_value_style
                               text: "--"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_manhattan
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_manhattan
+                              text: "Manhattan CPU"
+                          - label:
+                              id: manhattan_cpu_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_manhattan
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_manhattan
+                              text: "Manhattan Mem"
+                          - label:
+                              id: manhattan_mem_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_manhattan
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_manhattan
+                              text: "Manhattan Swap"
+                          - label:
+                              id: manhattan_swap_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_manhattan
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_manhattan
+                              text: "Manhattan Temp"
+                          - label:
+                              id: manhattan_temp_label
+                              styles: card_value_style
+                              text: "--°F"
