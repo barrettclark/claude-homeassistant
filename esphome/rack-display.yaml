@@ -330,6 +330,37 @@ sensor:
               args:
                 - id(manhattan_temp).state
 
+  # UPS (CyberPower EC650LCD, via Synology NUT server)
+  - platform: homeassistant
+    id: ups_charge
+    entity_id: sensor.office_ups_battery_charge
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: ups_charge_label
+            text: !lambda return str_sprintf("%.0f%%", id(ups_charge).state);
+
+  - platform: homeassistant
+    id: ups_load
+    entity_id: sensor.office_ups_load
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: ups_load_label
+            text: !lambda return str_sprintf("%.0f%%", id(ups_load).state);
+
+  - platform: homeassistant
+    id: ups_voltage
+    entity_id: sensor.office_ups_input_voltage
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: ups_voltage_label
+            text:
+              format: "%.0fV"
+              args:
+                - id(ups_voltage).state
+
 text_sensor:
   - platform: homeassistant
     id: outside_condition
@@ -339,6 +370,15 @@ text_sensor:
         - lvgl.label.update:
             id: outside_condition_label
             text: !lambda return id(outside_condition).state;
+
+  - platform: homeassistant
+    id: ups_status
+    entity_id: sensor.office_ups_status
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: ups_status_label
+            text: !lambda return id(ups_status).state;
 
 interval:
   - interval: 30s
@@ -401,6 +441,11 @@ lvgl:
       text_font: montserrat_10
     - id: card_title_manhattan
       text_color: 0x4DD0E1
+      text_font: montserrat_10
+    - id: card_border_ups
+      border_color: 0xE57373
+    - id: card_title_ups
+      text_color: 0xE57373
       text_font: montserrat_10
   pages:
     - id: page_home
@@ -775,3 +820,71 @@ lvgl:
                               id: manhattan_temp_label
                               styles: card_value_style
                               text: "--°F"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_ups
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_ups
+                              text: "UPS Status"
+                          - label:
+                              id: ups_status_label
+                              styles: card_value_style
+                              text: "--"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_ups
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_ups
+                              text: "UPS Charge"
+                          - label:
+                              id: ups_charge_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_ups
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_ups
+                              text: "UPS Load"
+                          - label:
+                              id: ups_load_label
+                              styles: card_value_style
+                              text: "--%"
+                    - obj:
+                        styles:
+                          - card_style
+                          - card_border_ups
+                        layout:
+                          type: flex
+                          flex_flow: COLUMN
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              styles: card_title_ups
+                              text: "UPS Input"
+                          - label:
+                              id: ups_voltage_label
+                              styles: card_value_style
+                              text: "--V"
