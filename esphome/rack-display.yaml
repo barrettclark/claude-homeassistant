@@ -298,7 +298,9 @@ sensor:
       then:
         - lvgl.label.update:
             id: manhattan_cpu_label
-            text: !lambda return str_sprintf("%.0f%%", id(manhattan_cpu).state);
+            text: !lambda |-
+              if (std::isnan(id(manhattan_cpu).state)) return std::string("OFFLINE");
+              return str_sprintf("%.0f%%", id(manhattan_cpu).state);
 
   - platform: homeassistant
     id: manhattan_mem
@@ -307,7 +309,9 @@ sensor:
       then:
         - lvgl.label.update:
             id: manhattan_mem_label
-            text: !lambda return str_sprintf("%.0f%%", id(manhattan_mem).state);
+            text: !lambda |-
+              if (std::isnan(id(manhattan_mem).state)) return std::string("OFFLINE");
+              return str_sprintf("%.0f%%", id(manhattan_mem).state);
 
   - platform: homeassistant
     id: manhattan_swap
@@ -316,7 +320,9 @@ sensor:
       then:
         - lvgl.label.update:
             id: manhattan_swap_label
-            text: !lambda return str_sprintf("%.0f%%", id(manhattan_swap).state);
+            text: !lambda |-
+              if (std::isnan(id(manhattan_swap).state)) return std::string("OFFLINE");
+              return str_sprintf("%.0f%%", id(manhattan_swap).state);
 
   - platform: homeassistant
     id: manhattan_temp
@@ -325,10 +331,9 @@ sensor:
       then:
         - lvgl.label.update:
             id: manhattan_temp_label
-            text:
-              format: "%.0f°F"
-              args:
-                - id(manhattan_temp).state
+            text: !lambda |-
+              if (std::isnan(id(manhattan_temp).state)) return std::string("OFFLINE");
+              return str_sprintf("%.0f°F", id(manhattan_temp).state);
 
   # UPS (CyberPower EC650LCD, via Synology NUT server)
   - platform: homeassistant

@@ -371,3 +371,37 @@
         data:
           message: "UPS battery low"
   mode: single
+- id: 'manhattan_offline'
+  alias: Manhattan Offline Notification
+  description: Notify when the Manhattan host (Glances sensors) drops offline for 5+ minutes, and when it comes back.
+  trigger:
+  - platform: state
+    entity_id: sensor.office_192_0_2_200_cpu_usage
+    to: unavailable
+    for:
+      minutes: 5
+    id: offline
+  - platform: state
+    entity_id: sensor.office_192_0_2_200_cpu_usage
+    from: unavailable
+    not_to:
+    - unknown
+    id: restored
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: offline
+      sequence:
+      - service: notify.mobile_app_barrett_clarks_iphone_17_pro
+        data:
+          message: "Manhattan is offline — may need a reboot"
+    - conditions:
+      - condition: trigger
+        id: restored
+      sequence:
+      - service: notify.mobile_app_barrett_clarks_iphone_17_pro
+        data:
+          message: "Manhattan is back online"
+  mode: single
