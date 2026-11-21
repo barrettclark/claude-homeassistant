@@ -323,3 +323,54 @@
     entity_id: switch.front_yard_christmas_lights_outdoor_lights_2
     domain: switch
   mode: single
+- id: 'ups_power_event'
+  alias: UPS Power Event Notification
+  description: Immediate notification when the office UPS goes on battery, returns to line power, or its charge drops low — real-time, unlike the daily battery-sweep blueprint.
+  trigger:
+  - platform: state
+    entity_id: sensor.office_ups_status
+    from: Online
+    id: on_battery
+  - platform: state
+    entity_id: sensor.office_ups_status
+    to: Online
+    id: restored
+  - platform: numeric_state
+    entity_id: sensor.office_ups_battery_charge
+    below: 20
+    id: low_charge
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: on_battery
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: sensor.office_ups_status
+          state: unknown
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: sensor.office_ups_status
+          state: unavailable
+      sequence:
+      - service: notify.mobile_app_barrett_clarks_iphone_17_pro
+        data:
+          message: "UPS on battery — power may be out"
+    - conditions:
+      - condition: trigger
+        id: restored
+      sequence:
+      - service: notify.mobile_app_barrett_clarks_iphone_17_pro
+        data:
+          message: "Power restored — UPS back online"
+    - conditions:
+      - condition: trigger
+        id: low_charge
+      sequence:
+      - service: notify.mobile_app_barrett_clarks_iphone_17_pro
+        data:
+          message: "UPS battery low"
+  mode: single
