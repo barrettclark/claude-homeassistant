@@ -371,14 +371,20 @@ text_sensor:
             id: outside_condition_label
             text: !lambda return id(outside_condition).state;
 
+  # Bound to the raw NUT flag string (office_ups_status_data, e.g. "OL",
+  # "OB"), not the human-readable sensor.office_ups_status — that one can
+  # read "Online, Battery Charging" or similar, too long for this card.
   - platform: homeassistant
     id: ups_status
-    entity_id: sensor.office_ups_status
+    entity_id: sensor.office_ups_status_data
     on_value:
       then:
         - lvgl.label.update:
             id: ups_status_label
-            text: !lambda return id(ups_status).state;
+            text: !lambda |-
+              std::string s = id(ups_status).state;
+              size_t pos = s.find(' ');
+              return (pos == std::string::npos) ? s : s.substr(0, pos);
 
 interval:
   - interval: 30s
@@ -401,8 +407,8 @@ lvgl:
       radius: 10
       border_width: 2
       pad_all: 4
-      width: 118
-      height: 68
+      width: 100
+      height: 56
     - id: card_value_style
       text_color: 0xE8ECF4
       text_font: montserrat_18
@@ -413,8 +419,8 @@ lvgl:
       text_color: 0xB8C0D0
       text_font: montserrat_12
     - id: card_grid_style
-      pad_row: 8
-      pad_column: 8
+      pad_row: 6
+      pad_column: 6
     # Per-source color coding: border + title color share the source's
     # accent so a card reads as "whose data is this" at a glance.
     - id: card_border_rack
@@ -506,6 +512,8 @@ lvgl:
                   bg_opa: TRANSP
                   border_width: 0
                   pad_top: 4
+                  pad_left: 0
+                  pad_right: 0
                   scrollable: false
                   styles: card_grid_style
                   layout:

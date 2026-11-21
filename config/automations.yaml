@@ -328,13 +328,16 @@
   description: Immediate notification when the office UPS goes on battery, returns to line power, or its charge drops low — real-time, unlike the daily battery-sweep blueprint.
   trigger:
   - platform: state
-    entity_id: sensor.office_ups_status
-    from: Online
-    id: on_battery
-  - platform: state
-    entity_id: sensor.office_ups_status
-    to: Online
-    id: restored
+    entity_id: sensor.office_ups_status_data
+    not_from:
+    - unknown
+    - unavailable
+    not_to:
+    - unknown
+    - unavailable
+    for:
+      seconds: 10
+    id: status_change
   - platform: numeric_state
     entity_id: sensor.office_ups_battery_charge
     below: 20
@@ -344,24 +347,18 @@
   - choose:
     - conditions:
       - condition: trigger
-        id: on_battery
-      - condition: not
-        conditions:
-        - condition: state
-          entity_id: sensor.office_ups_status
-          state: unknown
-      - condition: not
-        conditions:
-        - condition: state
-          entity_id: sensor.office_ups_status
-          state: unavailable
+        id: status_change
+      - condition: template
+        value_template: "{{ 'OB' in trigger.to_state.state.split() and 'OB' not in trigger.from_state.state.split() }}"
       sequence:
       - service: notify.mobile_app_barrett_clarks_iphone_17_pro
         data:
           message: "UPS on battery — power may be out"
     - conditions:
       - condition: trigger
-        id: restored
+        id: status_change
+      - condition: template
+        value_template: "{{ 'OB' in trigger.from_state.state.split() and 'OB' not in trigger.to_state.state.split() }}"
       sequence:
       - service: notify.mobile_app_barrett_clarks_iphone_17_pro
         data:
