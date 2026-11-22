@@ -1,0 +1,27 @@
+template:
+  - trigger:
+      - platform: time_pattern
+        minutes: "/15"
+      - platform: homeassistant
+        event: start
+    sensor:
+      - name: Manhattan Uptime
+        unique_id: manhattan_uptime_friendly
+        state: >
+          {% set ts = states('sensor.office_192_0_2_200_uptime') %}
+          {% if ts in ['unknown', 'unavailable', 'None'] %}
+            unknown
+          {% else %}
+            {% set delta = now() - as_datetime(ts) %}
+            {{ delta.days }}d {{ delta.seconds // 3600 }}h
+          {% endif %}
+      - name: Boulevardier Uptime
+        unique_id: boulevardier_uptime_friendly
+        state: >
+          {% set ts = states('sensor.boulevardier_last_boot') %}
+          {% if ts in ['unknown', 'unavailable', 'None'] %}
+            unknown
+          {% else %}
+            {% set delta = now() - as_datetime(ts) %}
+            {{ delta.days }}d {{ delta.seconds // 3600 }}h
+          {% endif %}
