@@ -430,7 +430,7 @@ text_sensor:
   # timestamps, not durations.
   - platform: homeassistant
     id: manhattan_uptime
-    entity_id: sensor.manhattan_uptime_friendly
+    entity_id: sensor.manhattan_uptime
     on_value:
       then:
         - lvgl.label.update:
@@ -439,7 +439,7 @@ text_sensor:
 
   - platform: homeassistant
     id: nas_uptime
-    entity_id: sensor.boulevardier_uptime_friendly
+    entity_id: sensor.boulevardier_uptime
     on_value:
       then:
         - lvgl.label.update:
