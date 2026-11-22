@@ -81,6 +81,7 @@ config/*.uuid
 *.db
 *.db-shm
 *.db-wal
+*.db.bak-*
 
 # Home Assistant specific temporary files
 config/.ha_run.lock
