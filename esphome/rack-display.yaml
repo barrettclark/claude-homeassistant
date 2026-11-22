@@ -48,6 +48,10 @@ i2c:
 time:
   - platform: homeassistant
     id: ha_time
+    on_time_sync:
+      - lvgl.label.update:
+          id: time_label
+          text: !lambda return id(ha_time).now().strftime("%I:%M %p");
 
 # Board is a DIYmalls/Sunton ESP32-8048S043C. The "ESP32-8048S050" model
 # below is the closest built-in ESPHome model — its pin mapping matches
@@ -180,7 +184,7 @@ sensor:
         - lvgl.label.update:
             id: outside_pressure_label
             text:
-              format: "%.2f inHg"
+              format: "%.2f"
               args:
                 - id(outside_pressure).state
 
@@ -193,6 +197,9 @@ sensor:
         - lvgl.label.update:
             id: nas_vol1_used_label
             text: !lambda return str_sprintf("%.0f%%", id(nas_vol1_used).state);
+        - lvgl.arc.update:
+            id: arc_nas_vol1_used
+            value: !lambda return (int) id(nas_vol1_used).state;
 
   - platform: homeassistant
     id: nas_vol2_used
@@ -202,6 +209,9 @@ sensor:
         - lvgl.label.update:
             id: nas_vol2_used_label
             text: !lambda return str_sprintf("%.0f%%", id(nas_vol2_used).state);
+        - lvgl.arc.update:
+            id: arc_nas_vol2_used
+            value: !lambda return (int) id(nas_vol2_used).state;
 
   - platform: homeassistant
     id: nas_vol1_temp
@@ -235,6 +245,9 @@ sensor:
         - lvgl.label.update:
             id: nas_cpu_label
             text: !lambda return str_sprintf("%.0f%%", id(nas_cpu).state);
+        - lvgl.arc.update:
+            id: arc_nas_cpu
+            value: !lambda return (int) id(nas_cpu).state;
 
   - platform: homeassistant
     id: nas_mem
@@ -244,6 +257,9 @@ sensor:
         - lvgl.label.update:
             id: nas_mem_label
             text: !lambda return str_sprintf("%.0f%%", id(nas_mem).state);
+        - lvgl.arc.update:
+            id: arc_nas_mem
+            value: !lambda return (int) id(nas_mem).state;
 
   # ASUS router. Entity IDs are derived from the AsusWRT integration's
   # configured host, currently a placeholder IP (192.0.2.1) — if that's
@@ -272,7 +288,7 @@ sensor:
         - lvgl.label.update:
             id: net_download_label
             text:
-              format: "%.0f KiB/s"
+              format: "%.0f"
               args:
                 - id(net_download).state
 
@@ -284,7 +300,7 @@ sensor:
         - lvgl.label.update:
             id: net_upload_label
             text:
-              format: "%.0f KiB/s"
+              format: "%.0f"
               args:
                 - id(net_upload).state
 
@@ -301,6 +317,10 @@ sensor:
             text: !lambda |-
               if (std::isnan(id(manhattan_cpu).state)) return std::string("OFFLINE");
               return str_sprintf("%.0f%%", id(manhattan_cpu).state);
+        - lvgl.arc.update:
+            id: arc_manhattan_cpu
+            value: !lambda |-
+              return std::isnan(id(manhattan_cpu).state) ? 0 : (int) id(manhattan_cpu).state;
 
   - platform: homeassistant
     id: manhattan_mem
@@ -312,6 +332,10 @@ sensor:
             text: !lambda |-
               if (std::isnan(id(manhattan_mem).state)) return std::string("OFFLINE");
               return str_sprintf("%.0f%%", id(manhattan_mem).state);
+        - lvgl.bar.update:
+            id: bar_manhattan_mem
+            value: !lambda |-
+              return std::isnan(id(manhattan_mem).state) ? 0 : (int) id(manhattan_mem).state;
 
   - platform: homeassistant
     id: manhattan_swap
@@ -323,6 +347,10 @@ sensor:
             text: !lambda |-
               if (std::isnan(id(manhattan_swap).state)) return std::string("OFFLINE");
               return str_sprintf("%.0f%%", id(manhattan_swap).state);
+        - lvgl.bar.update:
+            id: bar_manhattan_swap
+            value: !lambda |-
+              return std::isnan(id(manhattan_swap).state) ? 0 : (int) id(manhattan_swap).state;
 
   - platform: homeassistant
     id: manhattan_temp
@@ -344,6 +372,9 @@ sensor:
         - lvgl.label.update:
             id: ups_charge_label
             text: !lambda return str_sprintf("%.0f%%", id(ups_charge).state);
+        - lvgl.arc.update:
+            id: arc_ups_charge
+            value: !lambda return (int) id(ups_charge).state;
 
   - platform: homeassistant
     id: ups_load
@@ -353,6 +384,9 @@ sensor:
         - lvgl.label.update:
             id: ups_load_label
             text: !lambda return str_sprintf("%.0f%%", id(ups_load).state);
+        - lvgl.arc.update:
+            id: arc_ups_load
+            value: !lambda return (int) id(ups_load).state;
 
   - platform: homeassistant
     id: ups_voltage
@@ -391,6 +425,27 @@ text_sensor:
               size_t pos = s.find(' ');
               return (pos == std::string::npos) ? s : s.substr(0, pos);
 
+  # Friendly "Nd Hh" duration strings, computed in HA (config/packages/
+  # package_rack_display_uptime.yaml) since the source sensors are boot
+  # timestamps, not durations.
+  - platform: homeassistant
+    id: manhattan_uptime
+    entity_id: sensor.manhattan_uptime_friendly
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: manhattan_uptime_label
+            text: !lambda return id(manhattan_uptime).state;
+
+  - platform: homeassistant
+    id: nas_uptime
+    entity_id: sensor.boulevardier_uptime_friendly
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: nas_uptime_label
+            text: !lambda return id(nas_uptime).state;
+
 interval:
   - interval: 30s
     then:
@@ -398,36 +453,80 @@ interval:
           id: time_label
           text: !lambda return id(ha_time).now().strftime("%I:%M %p");
 
-# Single dashboard page — everything fits on one screen, so no paging
-# or swipe/nav-button navigation is needed.
+# Single dashboard page. Layout is absolute x/y on a literal 800x480
+# budget; flex is only used inside the header for right-aligning
+# variable-width text.
+#
+# Two ESPHome/LVGL gotchas this layout depends on avoiding:
+# - LVGL's default theme pads every obj ~20px per side (and between flex/
+#   grid children). The theme override below zeroes that, so every pixel
+#   of padding on the page is one declared here.
+# - A `main:` block on a widget replaces ALL of its top-level properties
+#   (width, height, x, y...), so main-part styling goes at the top level.
 lvgl:
   displays:
     - rack_display
   touchscreens:
     - rack_touch
+  theme:
+    obj:
+      pad_all: 0
+      pad_row: 0
+      pad_column: 0
   style_definitions:
     - id: card_style
       bg_color: 0x1E2029
       bg_opa: COVER
       radius: 10
       border_width: 2
-      pad_all: 4
-      width: 100
-      height: 56
-    - id: card_value_style
-      text_color: 0xE8ECF4
-      text_font: montserrat_18
+    - id: container_style
+      bg_opa: TRANSP
+      border_width: 0
+      radius: 0
     - id: page_title_style
       text_color: 0x4FC3F7
       text_font: montserrat_18
     - id: page_subtitle_style
       text_color: 0xB8C0D0
       text_font: montserrat_12
-    - id: card_grid_style
-      pad_row: 6
-      pad_column: 6
-    # Per-source color coding: border + title color share the source's
-    # accent so a card reads as "whose data is this" at a glance.
+    - id: section_header_style
+      text_color: 0x8A94A8
+      text_font: montserrat_14
+    - id: card_value_style
+      text_color: 0xE8ECF4
+      text_font: montserrat_18
+    - id: hero_value_style
+      text_color: 0xE8ECF4
+      text_font: montserrat_42
+    - id: metric_label_style
+      text_color: 0xB8C0D0
+      text_font: montserrat_12
+    - id: metric_value_style
+      text_color: 0xE8ECF4
+      text_font: montserrat_12
+    - id: uptime_label_style
+      text_color: 0x8A94A8
+      text_font: montserrat_12
+    - id: uptime_value_style
+      text_color: 0xB8C0D0
+      text_font: montserrat_12
+    - id: gauge_caption_style
+      text_color: 0xB8C0D0
+      text_font: montserrat_10
+    - id: arc_value_style
+      text_color: 0xE8ECF4
+      text_font: montserrat_14
+    - id: arc_value_style_lg
+      text_color: 0xE8ECF4
+      text_font: montserrat_26
+    - id: arc_caption_style_lg
+      text_color: 0xB8C0D0
+      text_font: montserrat_12
+    - id: bar_track_style
+      bg_color: 0x2A3142
+      bg_opa: COVER
+      radius: 5
+    # Per-source accent: border + title color say whose data a card is.
     - id: card_border_rack
       border_color: 0x4FC3F7
     - id: card_border_weather
@@ -438,466 +537,700 @@ lvgl:
       border_color: 0xBA68C8
     - id: card_border_manhattan
       border_color: 0x4DD0E1
-    - id: card_title_rack
-      text_color: 0x4FC3F7
-      text_font: montserrat_10
-    - id: card_title_weather
-      text_color: 0xFFB74D
-      text_font: montserrat_10
-    - id: card_title_nas
-      text_color: 0x81C784
-      text_font: montserrat_10
-    - id: card_title_network
-      text_color: 0xBA68C8
-      text_font: montserrat_10
-    - id: card_title_manhattan
-      text_color: 0x4DD0E1
-      text_font: montserrat_10
     - id: card_border_ups
       border_color: 0xE57373
+    - id: card_title_rack
+      text_color: 0x4FC3F7
+      text_font: montserrat_12
+    - id: card_title_weather
+      text_color: 0xFFB74D
+      text_font: montserrat_12
+    - id: card_title_nas
+      text_color: 0x81C784
+      text_font: montserrat_12
+    - id: card_title_network
+      text_color: 0xBA68C8
+      text_font: montserrat_12
+    - id: card_title_manhattan
+      text_color: 0x4DD0E1
+      text_font: montserrat_12
     - id: card_title_ups
       text_color: 0xE57373
-      text_font: montserrat_10
+      text_font: montserrat_12
+    # Radial gauges: full-circle track (main) + rounded indicator.
+    - id: arc_track_sm
+      arc_color: 0x2A3142
+      arc_width: 8
+      arc_rounded: false
+    - id: arc_track_lg
+      arc_color: 0x2A3142
+      arc_width: 14
+      arc_rounded: false
+    - id: arc_fill_nas
+      arc_color: 0x81C784
+      arc_width: 8
+      arc_rounded: true
+    - id: arc_fill_ups
+      arc_color: 0xE57373
+      arc_width: 8
+      arc_rounded: true
+    - id: arc_fill_manhattan_lg
+      arc_color: 0x4DD0E1
+      arc_width: 14
+      arc_rounded: true
   pages:
     - id: page_home
+      bg_color: 0x12141A
+      bg_opa: COVER
+      scrollable: false
       widgets:
+        # Header: y 6..36
         - obj:
-            width: 100%
-            height: 100%
-            bg_color: 0x12141A
-            bg_opa: COVER
-            border_width: 0
-            pad_top: 0
-            pad_bottom: 16
-            pad_left: 16
-            pad_right: 16
+            x: 12
+            y: 6
+            width: 776
+            height: 30
+            styles: container_style
             scrollable: false
             layout:
               type: flex
-              flex_flow: COLUMN
-              flex_align_main: START
+              flex_flow: ROW
+              flex_align_main: SPACE_BETWEEN
               flex_align_cross: CENTER
             widgets:
+              - label:
+                  styles: page_title_style
+                  text: "Home Office Rack"
               - obj:
-                  width: 100%
+                  width: SIZE_CONTENT
                   height: SIZE_CONTENT
-                  bg_opa: TRANSP
-                  border_width: 0
+                  styles: container_style
+                  scrollable: false
                   layout:
                     type: flex
                     flex_flow: ROW
-                    flex_align_main: SPACE_BETWEEN
+                    flex_align_main: END
                     flex_align_cross: CENTER
+                    pad_column: 10
                   widgets:
                     - label:
+                        id: time_label
                         styles: page_title_style
-                        text: "Home Office Rack"
-                    - obj:
-                        width: SIZE_CONTENT
-                        height: SIZE_CONTENT
-                        bg_opa: TRANSP
-                        border_width: 0
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: END
-                        widgets:
-                          - label:
-                              id: time_label
-                              styles: page_title_style
-                              text: "--:--"
-                          - label:
-                              id: outside_condition_label
-                              styles: page_subtitle_style
-                              text: "--"
-              - obj:
-                  width: 100%
-                  height: SIZE_CONTENT
-                  bg_opa: TRANSP
-                  border_width: 0
-                  pad_top: 4
-                  pad_left: 0
-                  pad_right: 0
-                  scrollable: false
-                  styles: card_grid_style
-                  layout:
-                    type: flex
-                    flex_flow: ROW_WRAP
-                    flex_align_main: CENTER
-                    flex_align_cross: CENTER
+                        text: "--:--"
+                    - label:
+                        id: outside_condition_label
+                        styles: page_subtitle_style
+                        text: "--"
+
+        # Left rail: x 12..244
+        - obj:
+            x: 12
+            y: 42
+            width: 232
+            height: 96
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_rack
+            widgets:
+              - label:
+                  x: 12
+                  y: 8
+                  styles: card_title_rack
+                  text: "Rack Air"
+              - label:
+                  id: temp_label
+                  align: BOTTOM_LEFT
+                  x: 12
+                  y: -8
+                  styles: hero_value_style
+                  text: "--°F"
+
+        - obj:
+            x: 12
+            y: 146
+            width: 232
+            height: 326
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_manhattan
+            widgets:
+              - label:
+                  x: 12
+                  y: 8
+                  styles: card_title_manhattan
+                  text: "Manhattan"
+              - arc:
+                  id: arc_manhattan_cpu
+                  align: TOP_MID
+                  y: 32
+                  width: 160
+                  height: 160
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_lg
+                  indicator:
+                    styles: arc_fill_manhattan_lg
                   widgets:
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_rack
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_rack
-                              text: "Rack Air"
-                          - label:
-                              id: temp_label
-                              styles: card_value_style
-                              text: "--°F"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_weather
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_weather
-                              text: "Temperature"
-                          - label:
-                              id: outside_temp_label
-                              styles: card_value_style
-                              text: "--°F"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_weather
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_weather
-                              text: "Humidity"
-                          - label:
-                              id: outside_humidity_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_weather
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_weather
-                              text: "Wind"
-                          - label:
-                              id: outside_wind_label
-                              styles: card_value_style
-                              text: "--"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_weather
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_weather
-                              text: "Pressure"
-                          - label:
-                              id: outside_pressure_label
-                              styles: card_value_style
-                              text: "--"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_nas
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_nas
-                              text: "Vol 1 Used"
-                          - label:
-                              id: nas_vol1_used_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_nas
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_nas
-                              text: "Vol 2 Used"
-                          - label:
-                              id: nas_vol2_used_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_nas
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_nas
-                              text: "Vol 1 Disks"
-                          - label:
-                              id: nas_vol1_temp_label
-                              styles: card_value_style
-                              text: "--°F"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_nas
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_nas
-                              text: "Vol 2 Disks"
-                          - label:
-                              id: nas_vol2_temp_label
-                              styles: card_value_style
-                              text: "--°F"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_nas
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_nas
-                              text: "CPU"
-                          - label:
-                              id: nas_cpu_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_nas
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_nas
-                              text: "Memory"
-                          - label:
-                              id: nas_mem_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_network
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_network
-                              text: "Devices"
-                          - label:
-                              id: net_devices_label
-                              styles: card_value_style
-                              text: "--"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_network
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_network
-                              text: "Download"
-                          - label:
-                              id: net_download_label
-                              styles: card_value_style
-                              text: "--"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_network
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_network
-                              text: "Upload"
-                          - label:
-                              id: net_upload_label
-                              styles: card_value_style
-                              text: "--"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_manhattan
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_manhattan
-                              text: "Manhattan CPU"
-                          - label:
-                              id: manhattan_cpu_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_manhattan
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_manhattan
-                              text: "Manhattan Mem"
-                          - label:
-                              id: manhattan_mem_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_manhattan
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_manhattan
-                              text: "Manhattan Swap"
-                          - label:
-                              id: manhattan_swap_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_manhattan
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_manhattan
-                              text: "Manhattan Temp"
-                          - label:
-                              id: manhattan_temp_label
-                              styles: card_value_style
-                              text: "--°F"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_ups
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_ups
-                              text: "UPS Status"
-                          - label:
-                              id: ups_status_label
-                              styles: card_value_style
-                              text: "--"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_ups
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_ups
-                              text: "UPS Charge"
-                          - label:
-                              id: ups_charge_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_ups
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_ups
-                              text: "UPS Load"
-                          - label:
-                              id: ups_load_label
-                              styles: card_value_style
-                              text: "--%"
-                    - obj:
-                        styles:
-                          - card_style
-                          - card_border_ups
-                        layout:
-                          type: flex
-                          flex_flow: COLUMN
-                          flex_align_main: CENTER
-                          flex_align_cross: CENTER
-                        widgets:
-                          - label:
-                              styles: card_title_ups
-                              text: "UPS Input"
-                          - label:
-                              id: ups_voltage_label
-                              styles: card_value_style
-                              text: "--V"
+                    - label:
+                        id: manhattan_cpu_label
+                        align: CENTER
+                        y: -8
+                        styles: arc_value_style_lg
+                        text: "--%"
+                    - label:
+                        align: CENTER
+                        y: 18
+                        styles: arc_caption_style_lg
+                        text: "CPU"
+              - label:
+                  x: 12
+                  y: 212
+                  styles: metric_label_style
+                  text: "Memory"
+              - bar:
+                  id: bar_manhattan_mem
+                  x: 70
+                  y: 215
+                  width: 86
+                  height: 10
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: bar_track_style
+                  indicator:
+                    bg_color: 0x4DD0E1
+                    bg_opa: COVER
+                    radius: 5
+              - label:
+                  id: manhattan_mem_label
+                  align: TOP_RIGHT
+                  x: -12
+                  y: 212
+                  styles: metric_value_style
+                  text: "--%"
+              - label:
+                  x: 12
+                  y: 242
+                  styles: metric_label_style
+                  text: "Swap"
+              - bar:
+                  id: bar_manhattan_swap
+                  x: 70
+                  y: 245
+                  width: 86
+                  height: 10
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: bar_track_style
+                  indicator:
+                    bg_color: 0x4DD0E1
+                    bg_opa: COVER
+                    radius: 5
+              - label:
+                  id: manhattan_swap_label
+                  align: TOP_RIGHT
+                  x: -12
+                  y: 242
+                  styles: metric_value_style
+                  text: "--%"
+              - label:
+                  align: BOTTOM_LEFT
+                  x: 12
+                  y: -12
+                  styles: uptime_label_style
+                  text: "Uptime"
+              - label:
+                  id: manhattan_uptime_label
+                  align: BOTTOM_RIGHT
+                  x: -12
+                  y: -12
+                  styles: uptime_value_style
+                  text: "--"
+        # Right column: x 256..788 (532 wide)
+        - label:
+            x: 256
+            y: 42
+            styles: section_header_style
+            text: "Temperatures"
+
+        - obj:
+            x: 256
+            y: 62
+            width: 127
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_weather
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_weather
+                  text: "Outside"
+              - label:
+                  id: outside_temp_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--°F"
+
+        - obj:
+            x: 391
+            y: 62
+            width: 127
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_nas
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_nas
+                  text: "Vol 1 Disks"
+              - label:
+                  id: nas_vol1_temp_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--°F"
+
+        - obj:
+            x: 526
+            y: 62
+            width: 127
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_nas
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_nas
+                  text: "Vol 2 Disks"
+              - label:
+                  id: nas_vol2_temp_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--°F"
+
+        - obj:
+            x: 661
+            y: 62
+            width: 127
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_manhattan
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_manhattan
+                  text: "Manhattan"
+              - label:
+                  id: manhattan_temp_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--°F"
+
+        - label:
+            x: 256
+            y: 128
+            styles: section_header_style
+            text: "Utilization"
+        - obj:
+            x: 256
+            y: 148
+            width: 261
+            height: 238
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_nas
+            widgets:
+              - label:
+                  x: 12
+                  y: 8
+                  styles: card_title_nas
+                  text: "NAS - Boulevardier"
+              - arc:
+                  id: arc_nas_vol1_used
+                  align: TOP_MID
+                  x: -62
+                  y: 28
+                  width: 70
+                  height: 70
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_sm
+                  indicator:
+                    styles: arc_fill_nas
+                  widgets:
+                    - label:
+                        id: nas_vol1_used_label
+                        align: CENTER
+                        styles: arc_value_style
+                        text: "--%"
+              - label:
+                  align: TOP_MID
+                  x: -62
+                  y: 100
+                  styles: gauge_caption_style
+                  text: "Vol 1"
+              - arc:
+                  id: arc_nas_vol2_used
+                  align: TOP_MID
+                  x: 62
+                  y: 28
+                  width: 70
+                  height: 70
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_sm
+                  indicator:
+                    styles: arc_fill_nas
+                  widgets:
+                    - label:
+                        id: nas_vol2_used_label
+                        align: CENTER
+                        styles: arc_value_style
+                        text: "--%"
+              - label:
+                  align: TOP_MID
+                  x: 62
+                  y: 100
+                  styles: gauge_caption_style
+                  text: "Vol 2"
+              - arc:
+                  id: arc_nas_cpu
+                  align: TOP_MID
+                  x: -62
+                  y: 118
+                  width: 70
+                  height: 70
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_sm
+                  indicator:
+                    styles: arc_fill_nas
+                  widgets:
+                    - label:
+                        id: nas_cpu_label
+                        align: CENTER
+                        styles: arc_value_style
+                        text: "--%"
+              - label:
+                  align: TOP_MID
+                  x: -62
+                  y: 190
+                  styles: gauge_caption_style
+                  text: "CPU"
+              - arc:
+                  id: arc_nas_mem
+                  align: TOP_MID
+                  x: 62
+                  y: 118
+                  width: 70
+                  height: 70
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_sm
+                  indicator:
+                    styles: arc_fill_nas
+                  widgets:
+                    - label:
+                        id: nas_mem_label
+                        align: CENTER
+                        styles: arc_value_style
+                        text: "--%"
+              - label:
+                  align: TOP_MID
+                  x: 62
+                  y: 190
+                  styles: gauge_caption_style
+                  text: "Memory"
+              - label:
+                  align: BOTTOM_LEFT
+                  x: 12
+                  y: -10
+                  styles: uptime_label_style
+                  text: "Uptime"
+              - label:
+                  id: nas_uptime_label
+                  align: BOTTOM_RIGHT
+                  x: -12
+                  y: -10
+                  styles: uptime_value_style
+                  text: "--"
+        - obj:
+            x: 527
+            y: 148
+            width: 261
+            height: 238
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_ups
+            widgets:
+              - label:
+                  x: 12
+                  y: 8
+                  styles: card_title_ups
+                  text: "UPS"
+              - arc:
+                  id: arc_ups_charge
+                  align: TOP_MID
+                  x: -62
+                  y: 36
+                  width: 96
+                  height: 96
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_sm
+                  indicator:
+                    styles: arc_fill_ups
+                  widgets:
+                    - label:
+                        id: ups_charge_label
+                        align: CENTER
+                        styles: arc_value_style
+                        text: "--%"
+              - label:
+                  align: TOP_MID
+                  x: -62
+                  y: 136
+                  styles: gauge_caption_style
+                  text: "Charge"
+              - arc:
+                  id: arc_ups_load
+                  align: TOP_MID
+                  x: 62
+                  y: 36
+                  width: 96
+                  height: 96
+                  start_angle: 0
+                  end_angle: 360
+                  rotation: 270
+                  adjustable: false
+                  value: 0
+                  min_value: 0
+                  max_value: 100
+                  styles: arc_track_sm
+                  indicator:
+                    styles: arc_fill_ups
+                  widgets:
+                    - label:
+                        id: ups_load_label
+                        align: CENTER
+                        styles: arc_value_style
+                        text: "--%"
+              - label:
+                  align: TOP_MID
+                  x: 62
+                  y: 136
+                  styles: gauge_caption_style
+                  text: "Load"
+              - label:
+                  align: BOTTOM_LEFT
+                  x: 12
+                  y: -34
+                  styles: uptime_label_style
+                  text: "Status"
+              - label:
+                  id: ups_status_label
+                  align: BOTTOM_RIGHT
+                  x: -12
+                  y: -34
+                  styles: uptime_value_style
+                  text: "--"
+              - label:
+                  align: BOTTOM_LEFT
+                  x: 12
+                  y: -10
+                  styles: uptime_label_style
+                  text: "Input"
+              - label:
+                  id: ups_voltage_label
+                  align: BOTTOM_RIGHT
+                  x: -12
+                  y: -10
+                  styles: uptime_value_style
+                  text: "--V"
+        - label:
+            x: 256
+            y: 394
+            styles: section_header_style
+            text: "Status & Network"
+
+        - obj:
+            x: 256
+            y: 414
+            width: 84
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_weather
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_weather
+                  text: "Humidity"
+              - label:
+                  id: outside_humidity_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--%"
+
+        - obj:
+            x: 346
+            y: 414
+            width: 84
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_weather
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_weather
+                  text: "Wind"
+              - label:
+                  id: outside_wind_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--"
+
+        - obj:
+            x: 435
+            y: 414
+            width: 84
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_weather
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_weather
+                  text: "Baro inHg"
+              - label:
+                  id: outside_pressure_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--"
+
+        - obj:
+            x: 525
+            y: 414
+            width: 84
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_network
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_network
+                  text: "Devices"
+              - label:
+                  id: net_devices_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--"
+
+        - obj:
+            x: 614
+            y: 414
+            width: 84
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_network
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_network
+                  text: "Down KiB/s"
+              - label:
+                  id: net_download_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--"
+
+        - obj:
+            x: 704
+            y: 414
+            width: 84
+            height: 58
+            scrollable: false
+            styles:
+              - card_style
+              - card_border_network
+            widgets:
+              - label:
+                  align: TOP_MID
+                  y: 7
+                  styles: card_title_network
+                  text: "Up KiB/s"
+              - label:
+                  id: net_upload_label
+                  align: BOTTOM_MID
+                  y: -7
+                  styles: card_value_style
+                  text: "--"
