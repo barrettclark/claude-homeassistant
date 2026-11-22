@@ -194,11 +194,11 @@
     entity_id: switch.christmas_lights_3
     domain: switch
   - type: turn_off
-    device_id: 192d4821d36cd9674e68732ff0dbd537
+    device_id: 22e157849ed4db737ba7e6ecf4f7d305
     entity_id: switch.front_yard_christmas_lights_outdoor_lights_1
     domain: switch
   - type: turn_off
-    device_id: ff77f510b8748d7ddac12ebc198bd194
+    device_id: 22e157849ed4db737ba7e6ecf4f7d305
     entity_id: switch.front_yard_christmas_lights_outdoor_lights_2
     domain: switch
   - type: turn_off
@@ -315,11 +315,11 @@
       {{ (m == 10 and d >= 31) or m == 11 or m == 12 or (m == 1 and d <= 7) }}
   actions:
   - type: turn_on
-    device_id: 192d4821d36cd9674e68732ff0dbd537
+    device_id: 22e157849ed4db737ba7e6ecf4f7d305
     entity_id: switch.front_yard_christmas_lights_outdoor_lights_1
     domain: switch
   - type: turn_on
-    device_id: ff77f510b8748d7ddac12ebc198bd194
+    device_id: 22e157849ed4db737ba7e6ecf4f7d305
     entity_id: switch.front_yard_christmas_lights_outdoor_lights_2
     domain: switch
   mode: single
